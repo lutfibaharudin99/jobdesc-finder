@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pencari Job Desc HTML/JS</title>
+    <!-- Memuat Tailwind CSS dari CDN untuk styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Mengatur font global */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Styling untuk area konten Markdown */
+        .prose h2, .prose h3 {
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 0.5rem;
+        }
+        .prose ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-8">
+
+    <header class="text-center mb-8">
+        <h1 class="text-4xl font-extrabold text-indigo-700 dark:text-indigo-400 flex items-center justify-center">
+            <svg class="w-8 h-8 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.5 23.5 0 0112 15c-3.185 0-5.917-.936-8.745-2.745M21 13.255A23.5 23.5 0 0112 15c-3.185 0-5.917-.936-8.745-2.745M21 13.255V14a3 3 0 01-3 3h-6a3 3 0 01-3-3v-1.745M12 10a3 3 0 100-6 3 3 0 000 6z"></path></svg>
+            Pencari Job Desc Murni HTML/JS
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">
+            Demonstrasi pemanggilan Gemini API menggunakan JavaScript murni.
+        </p>
+    </header>
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Formulir Input -->
+        <form id="searchForm" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl border border-indigo-200 dark:border-indigo-700 mb-8">
+            <label for="jobTitleInput" class="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Nama Posisi Pekerjaan (Contoh: Donor Relationship Management)
+            </label>
+            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <div class="relative flex-grow">
+                    <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <input
+                        id="jobTitleInput"
+                        type="text"
+                        placeholder="Masukkan judul pekerjaan..."
+                        class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition duration-150"
+                        required
+                    />
+                </div>
+                <button
+                    type="submit"
+                    id="searchButton"
+                    class="flex items-center justify-center px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 transition duration-150 ease-in-out disabled:bg-indigo-400 disabled:cursor-not-allowed"
+                >
+                    <svg id="zapIcon" class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Cari Jobdesc dengan Gemini
+                </button>
+            </div>
+        </form>
+
+        <!-- Area Hasil -->
+        <div id="resultsArea" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 min-h-[300px]">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 border-b pb-2 border-gray-200 dark:border-gray-700">
+                Hasil Deskripsi Pekerjaan
+            </h2>
+            <div id="jobDescOutput" class="prose max-w-none dark:text-gray-300">
+                <div class="flex flex-col items-center justify-center h-full text-center p-10">
+                    <svg class="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.5 23.5 0 0112 15c-3.185 0-5.917-.936-8.745-2.745M21 13.255A23.5 23.5 0 0112 15c-3.185 0-5.917-.936-8.745-2.745M21 13.255V14a3 3 0 01-3 3h-6a3 3 0 01-3-3v-1.745M12 10a3 3 0 100-6 3 3 0 000 6z"></path></svg>
+                    <p class="text-gray-500 dark:text-gray-400">
+                        Masukkan nama posisi di atas dan klik tombol untuk mulai menghasilkan deskripsi pekerjaan.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logika JavaScript Murni -->
+    <script>
+        const apiKey = ""; // Kunci API akan disuntikkan secara otomatis.
+        const modelName = 'gemini-2.5-flash-preview-09-2025';
+        const jobTitleInput = document.getElementById('jobTitleInput');
+        const searchForm = document.getElementById('searchForm');
+        const searchButton = document.getElementById('searchButton');
+        const jobDescOutput = document.getElementById('jobDescOutput');
+
+        // Helper untuk menampilkan loading state
+        function setLoading(isLoading, jobTitle = '') {
+            jobTitleInput.disabled = isLoading;
+            searchButton.disabled = isLoading;
+            
+            if (isLoading) {
+                searchButton.innerHTML = `<svg class="mr-2 h-5 w-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20h-5v-5M4 20h5V4M20 4h-5v5"></path></svg>Memproses...`;
+                jobDescOutput.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-48">
+                        <svg class="w-10 h-10 text-indigo-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20h-5v-5M4 20h5V4M20 4h-5v5"></path></svg>
+                        <p class="mt-4 text-indigo-600 dark:text-indigo-300">AI sedang menyusun deskripsi untuk "${jobTitle}"...</p>
+                    </div>
+                `;
+            } else {
+                searchButton.innerHTML = `<svg id="zapIcon" class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>Cari Jobdesc dengan Gemini`;
+            }
+        }
+
+        // Helper untuk menampilkan pesan error
+        function displayError(message) {
+            jobDescOutput.innerHTML = `
+                <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-900 dark:text-red-300 flex items-start">
+                    <svg class="h-5 w-5 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.3 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <div>
+                        <span class="font-medium">Error:</span> ${message}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Helper untuk mengkonversi Markdown sederhana ke HTML
+        function renderMarkdown(text) {
+            let html = text
+                // Subjudul H3
+                .replace(/###\s*(.*)/g, '<h3>$1</h3>')
+                // Judul H2
+                .replace(/##\s*(.*)/g, '<h2>$1</h2>')
+                // Teks Tebal
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // Mengubah bullet points menjadi list HTML
+            let listHtml = '';
+            const lines = html.split('\n');
+            let inList = false;
+
+            for (const line of lines) {
+                if (line.trim().startsWith('* ') || line.trim().startsWith('- ')) {
+                    if (!inList) {
+                        listHtml += '<ul class="list-disc pl-5 space-y-1 text-gray-700 dark:text-gray-300">';
+                        inList = true;
+                    }
+                    listHtml += `<li>${line.substring(2).trim()}</li>`;
+                } else {
+                    if (inList) {
+                        listHtml += '</ul>';
+                        inList = false;
+                    }
+                    if (line.trim().length > 0) {
+                        listHtml += `<p class="mb-2">${line.trim()}</p>`;
+                    }
+                }
+            }
+            if (inList) {
+                listHtml += '</ul>';
+            }
+
+            return listHtml;
+        }
+
+        // Fungsi utama untuk memanggil API (dengan backoff)
+        async function generateContentWithRetry(payload, maxRetries = 5) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+            
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.status === 429) {
+                        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                        console.warn(`[API] Status 429 received. Retrying in ${delay / 1000}s... (Attempt ${attempt + 1})`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`HTTP error! status: ${response.status}. Details: ${errorText}`);
+                    }
+
+                    const result = await response.json();
+                    const candidate = result.candidates?.[0];
+
+                    if (candidate && candidate.content?.parts?.[0]?.text) {
+                        const text = candidate.content.parts[0].text;
+                        let sources = [];
+                        const groundingMetadata = candidate.groundingMetadata;
+                        if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                            sources = groundingMetadata.groundingAttributions
+                                .map(attribution => ({ uri: attribution.web?.uri, title: attribution.web?.title }))
+                                .filter(source => source.uri && source.title);
+                        }
+                        return { text, sources };
+                    } else {
+                        throw new Error("Respon API tidak mengandung teks yang valid.");
+                    }
+
+                } catch (error) {
+                    console.error(`[API] Attempt ${attempt + 1} failed:`, error.message);
+                    if (attempt === maxRetries - 1) {
+                        throw new Error("Gagal terhubung ke API setelah beberapa kali percobaan.");
+                    }
+                    const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+            throw new Error("Gagal mendapatkan respon dari API.");
+        }
+
+        // Listener untuk form submission
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const jobTitle = jobTitleInput.value.trim();
+            if (!jobTitle) {
+                displayError('Masukkan nama posisi pekerjaan terlebih dahulu.');
+                return;
+            }
+
+            setLoading(true, jobTitle);
+            jobDescOutput.innerHTML = ''; // Bersihkan output sebelumnya
+
+            const systemPrompt = "Bertindaklah sebagai spesialis HR profesional. Hasilkan deskripsi pekerjaan yang komprehensif dan profesional berdasarkan judul posisi yang diberikan. Deskripsi harus mencakup 1) Ringkasan/Ikhtisar Posisi, 2) Tanggung Jawab Utama, dan 3) Kualifikasi yang Diperlukan. Format respons menggunakan Markdown dengan sub-judul.";
+            const userQuery = `Buatkan deskripsi pekerjaan untuk posisi: "${jobTitle}"`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: [{ "google_search": {} }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+
+            try {
+                const { text, sources } = await generateContentWithRetry(payload);
+                
+                // 1. Tampilkan Job Description
+                jobDescOutput.innerHTML = renderMarkdown(text);
+                
+                // 2. Tampilkan Sumber (Sources)
+                if (sources.length > 0) {
+                    let sourcesHtml = `
+                        <div class="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                <svg class="w-4 h-4 mr-1 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Informasi Didasarkan Pada Sumber Web:
+                            </h3>
+                            <ul class="space-y-1 text-sm text-gray-500 dark:text-gray-400">
+                    `;
+                    sources.forEach((source, index) => {
+                        sourcesHtml += `
+                            <li class="truncate">
+                                <a href="${source.uri}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 underline" title="${source.title || source.uri}">
+                                    ${source.title || source.uri}
+                                </a>
+                            </li>
+                        `;
+                    });
+                    sourcesHtml += `</ul></div>`;
+                    jobDescOutput.innerHTML += sourcesHtml;
+                }
+
+            } catch (err) {
+                console.error("Kesalahan dalam pencarian jobdesc:", err);
+                displayError(`Gagal menghasilkan deskripsi pekerjaan. Detail: ${err.message}`);
+            } finally {
+                setLoading(false);
+            }
+        });
+
+    </script>
+</body>
+</html>
