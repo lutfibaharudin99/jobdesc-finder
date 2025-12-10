@@ -171,21 +171,30 @@
                         body: JSON.stringify(payload)
                     });
 
+                    // 1. Cek Throttling (429) dan lakukan retry
                     if (response.status === 429) {
-                        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-                        console.warn(`[API] Status 429 received. Retrying in ${delay / 1000}s... (Attempt ${attempt + 1})`);
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        continue;
+                        if (attempt < maxRetries - 1) {
+                            const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                            console.warn(`[API] Status 429 received. Retrying in ${delay / 1000}s... (Attempt ${attempt + 1})`);
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        } else {
+                             // Jika sudah mencapai batas retry, lempar error
+                            throw new Error(`Gagal terhubung ke API setelah ${maxRetries} kali percobaan (Error 429).`);
+                        }
                     }
 
+                    // 2. Cek error HTTP lainnya
                     if (!response.ok) {
                         const errorText = await response.text();
-                        throw new Error(`HTTP error! status: ${response.status}. Details: ${errorText}`);
+                        // Langsung lempar error tanpa retry untuk non-429 error
+                        throw new Error(`Permintaan API gagal. Status: ${response.status}. Detail: ${errorText}`);
                     }
 
                     const result = await response.json();
                     const candidate = result.candidates?.[0];
 
+                    // 3. Ekstrak teks dan sumber
                     if (candidate && candidate.content?.parts?.[0]?.text) {
                         const text = candidate.content.parts[0].text;
                         let sources = [];
@@ -197,19 +206,22 @@
                         }
                         return { text, sources };
                     } else {
-                        throw new Error("Respon API tidak mengandung teks yang valid.");
+                        throw new Error("Respon API tidak mengandung teks yang valid atau kosong.");
                     }
 
                 } catch (error) {
-                    console.error(`[API] Attempt ${attempt + 1} failed:`, error.message);
-                    if (attempt === maxRetries - 1) {
-                        throw new Error("Gagal terhubung ke API setelah beberapa kali percobaan.");
+                    // Jika ini bukan percobaan terakhir, log dan coba lagi (hanya jika error bukan dari throw non-429 di atas)
+                    if (attempt < maxRetries - 1 && error.message.includes('Gagal terhubung ke API')) {
+                        console.error(`[API] Attempt ${attempt + 1} failed (Retrying):`, error.message);
+                        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
                     }
-                    const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
-                    await new Promise(resolve => setTimeout(resolve, delay));
+                    // Jika ini percobaan terakhir atau error non-retryable (seperti yang dilempar dari response.ok check)
+                    throw error;
                 }
             }
-            throw new Error("Gagal mendapatkan respon dari API.");
+            throw new Error("Gagal mendapatkan respon dari API setelah semua percobaan.");
         }
 
         // Listener untuk form submission
@@ -264,12 +276,13 @@
 
             } catch (err) {
                 console.error("Kesalahan dalam pencarian jobdesc:", err);
+                // Menampilkan error yang lebih spesifik
                 displayError(`Gagal menghasilkan deskripsi pekerjaan. Detail: ${err.message}`);
             } finally {
                 setLoading(false);
             }
         });
-        
+
     </script>
 </body>
 </html>
